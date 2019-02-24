@@ -2,7 +2,6 @@ require 'openssl'
 require 'net/http'
 require 'json'
 require 'time'
-require 'pry'
 
 class PTVStop
   # Montague St Stop Info (Route 109)
@@ -124,14 +123,5 @@ class PTVStop
     signature = OpenSSL::HMAC.hexdigest('sha1',SECURITY_KEY, params).upcase
     BASE_URL + params + "&signature=#{signature}"
   end
-end
-
-# This is the method that AWS Lamda requires.
-# Params from Slack are passed in as event["queryStringParameters"]\
-# eg: /tram i need route 69 please would mean event["queryStringParameters"] == "i need route 69 please"
-def lambda_handler(event:, context:)
-  query_string = JSON.generate(event["queryStringParameters"] || '')
-
-  {statusCode: 200, body: JSON.generate(PTVStop.new(query_string).minutes_until_depart)}
 end
 
