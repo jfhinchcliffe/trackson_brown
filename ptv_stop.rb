@@ -21,7 +21,7 @@ class PTVStop
   attr_reader :requested_stop_info
 
   # Can divine these either via the API or by using the
-  # PTV Journey Planner: https://www.ptv.vic.gov.au/route/services/1041/96/#
+  # PTV Journey Planner: https://www.ptv.vic.gov.au/route/services/1041/96/
   STOP_INFO = {
     '109': {
       name: 'Montague St Stop (Route 109)',
@@ -36,7 +36,7 @@ class PTVStop
   }
 
   def initialize(slack_query = '')
-    @requested_stop_info = determine_route(slack_query)
+    @requested_stop_info = determine_requested_route(slack_query)
   end
 
   def minutes_until_depart
@@ -56,7 +56,7 @@ class PTVStop
 
   # This is where we pull the route out of the submitted slack command - eg /tram 96 or tram route 96 will pull out '96'
   # defaults to Route 109 (Montague St)
-  def determine_route(slack_query)
+  def determine_requested_route(slack_query)
     submitted_text = slack_query.to_s
 
     return STOP_INFO[:'96'] if submitted_text.include? '96'
@@ -109,19 +109,13 @@ class PTVStop
     JSON.parse(Net::HTTP.get(uri))
   end
 
-  def create_signed_url_for(params, direction_id)
-    params_with_dev_id = stop_url + "?devid=#{DEVELOPER_ID}&direction_id=#{requested_stop_info['direction_to_city_id']}&max_results=3"
-    sign_params(params_with_dev_id)
-  end
-
   def signed_url
     params_with_dev_id = stop_url + "?devid=#{DEVELOPER_ID}&direction_id=#{requested_stop_info[:direction_to_city_id]}&max_results=3"
-    sign_params(params_with_dev_id)
+    BASE_URL + params + "&signature=#{sign_params(params_with_dev_id)}"
   end
 
   def sign_params(params)
-    signature = OpenSSL::HMAC.hexdigest('sha1',SECURITY_KEY, params).upcase
-    BASE_URL + params + "&signature=#{signature}"
+    OpenSSL::HMAC.hexdigest('sha1',SECURITY_KEY, params).upcase
   end
 end
 
